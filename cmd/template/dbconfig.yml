@@ -1,0 +1,5 @@
+postgres:
+  dialect: postgres
+  datasource: ${DB_URL}?sslmode=disable
+  dir: migrations
+  table: migrations

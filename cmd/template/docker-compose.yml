@@ -1,0 +1,23 @@
+services:
+  database:
+    image: postgres:latest
+    networks:
+      - service_network
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=users
+    expose:
+      - "5432"
+
+  test:
+    build:
+      context: .
+      target: development
+    container_name: chatbot-admin-tests
+    env_file: ./tests/test.env
+    networks:
+      - service_network
+
+networks:
+  service_network:
