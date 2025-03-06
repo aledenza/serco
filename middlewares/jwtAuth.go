@@ -15,7 +15,6 @@ import (
 
 type JWTAuthConfig struct {
 	PublicKey       *string
-	Issuer          string
 	ServiceName     string
 	AuthScheme      string `default:"Bearer"`
 	TokenHeader     string `default:"Authorization"`
@@ -30,8 +29,8 @@ func JWTAuth(config JWTAuthConfig) func(huma.Context, func(huma.Context)) {
 		return func(ctx huma.Context, next func(huma.Context)) { next(ctx) }
 	}
 
-	if config.PublicKey == nil || *config.PublicKey == "" || config.Issuer == "" {
-		panic("public key and issuer required")
+	if config.PublicKey == nil || *config.PublicKey == "" || config.ServiceName == "" {
+		panic("public key and service name required")
 	}
 
 	block, _ := pem.Decode([]byte(*config.PublicKey))
@@ -72,12 +71,27 @@ func JWTAuth(config JWTAuthConfig) func(huma.Context, func(huma.Context)) {
 		sub, subErr := token.Claims.GetSubject()
 		exp, expErr := token.Claims.GetExpirationTime()
 		aud, audErr := token.Claims.GetAudience()
-
-		if issErr != nil || subErr != nil || expErr != nil || audErr != nil ||
-			iss != config.Issuer || sub == "" || exp.Before(time.Now()) || len(aud) == 0 || aud[0] != config.ServiceName {
+		// forbidden if errors
+		if issErr != nil || subErr != nil || expErr != nil || audErr != nil {
 			forbidden()
 			return
 		}
+		// forbidden is credentials didn't match
+		if iss != config.ServiceName || sub == "" || exp.Before(time.Now()) {
+			forbidden()
+			return
+		}
+		// check audience (available handlers). If aud is empty means no restrictions
+		if ctx.URL().Path != "/jwtping" && len(aud) != 0 {
+			for _, allowedPath := range aud {
+				if strings.HasPrefix(ctx.Operation().Path, allowedPath) {
+					goto next
+				}
+			}
+			forbidden()
+			return
+		}
+	next:
 		externalClientMetric(sub)
 		next(ctx)
 	}

@@ -21,7 +21,6 @@ func NewUserDatabase(conn *database.Connection) *UserDatabase {
 }
 
 func (ud *UserDatabase) GetUser(ctx context.Context, userId int) (map[string]any, bool) {
-	// panic("PIZDEC")
 	query := `
 		SELECT user_id, first_name, second_name
 		FROM user_table

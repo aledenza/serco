@@ -24,7 +24,7 @@ var (
 	)
 	requestErrors = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "http_client_request_errors_tota",
+			Name: "http_client_request_errors_total",
 			Help: "Total number of HTTP requests errors",
 		},
 		[]string{"clientName", "httpMethod", "methodName"},

@@ -2,6 +2,12 @@ package databaseErrors
 
 import "fmt"
 
+type EmptyConnectionString struct{}
+
+func (EmptyConnectionString) Error() string {
+	return "empty connection string"
+}
+
 type NoConnectionError struct{}
 
 func (NoConnectionError) Error() string {

@@ -19,7 +19,7 @@ func getenv(key, dflt string) func() string {
 
 var APP_HOST = getenv("APP_HOST", "0.0.0.0")
 var APP_PORT = getenv("APP_PORT", "8000")
-var APP_NAME = getenv("APP_NAME", "")
+var APP_NAME = getenv("APP_NAME", "{{.APP_NAME}}")
 var ENV = getenv("ENV", "")
 var LOG_LEVEL = getenv("LOG_LEVEL", "debug")
 

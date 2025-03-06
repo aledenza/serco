@@ -1,6 +1,7 @@
 package middlewares
 
 import (
+	"net/http"
 	"regexp"
 
 	"github.com/aledenza/serco/utils"
@@ -8,9 +9,16 @@ import (
 	"github.com/danielgtaylor/huma/v2"
 )
 
+type MuxWrapper struct {
+	M *http.ServeMux
+}
+
+func (mw *MuxWrapper) Handle(path string, handler http.Handler) {
+	mw.M.Handle("GET "+path, handler)
+}
+
 type MetricConfig struct {
-	Path string `default:"/metrics"`
-	// ServiceName string
+	Path      string `default:"/metrics"`
 	Whitelist []string
 }
 

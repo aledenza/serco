@@ -1,7 +1,6 @@
 package app
 
 import (
-	"errors"
 	"net/http"
 	"service/config"
 	"service/internal/service"
@@ -19,27 +18,19 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-type MuxWrapper struct {
-	m *http.ServeMux
-}
-
-func (mw *MuxWrapper) Handle(path string, handler http.Handler) {
-	mw.m.Handle("GET "+path, handler)
-}
-
 func CreateServer() *serco.Server {
 	config := serco.NewConfig[config.Config]("settings", "config")
 
 	conn, err := database.NewConnection(config.DbConf.URL, databaseDrivers.Pgx, config.DbConf.Options)
 	if err != nil {
-		panic("can't connect to database")
+		panic(err)
 	}
 
 	router := &http.ServeMux{}
 
 	port, err := strconv.Atoi(env.APP_PORT())
 	if err != nil {
-		panic(errors.Join(errors.New("can't parse port"), err))
+		panic(err)
 	}
 	userService := service.NewUserService(config.ClientConf, conn)
 	userView := view.NewUserView(userService)
@@ -61,15 +52,13 @@ func CreateServer() *serco.Server {
 					middlewares.JWTAuthConfig{
 						PublicKey:       config.Token,
 						AllowEmptyToken: true,
-						Issuer:          "SERVICE",
 						ServiceName:     env.APP_NAME(),
-						Whitelist:       []string{"", "/ping", "/version", "/docs", "/metrics"},
 					},
 				),
 				middlewares.Metric(
-					&MuxWrapper{m: router},
+					&middlewares.MuxWrapper{M: router},
 					promhttp.Handler(),
-					middlewares.MetricConfig{Whitelist: []string{"/ping", "/version", "/docs", "/metrics"}},
+					middlewares.MetricConfig{Whitelist: []string{"/jwtping"}},
 				),
 			},
 		},

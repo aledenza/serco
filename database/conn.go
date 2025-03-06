@@ -17,6 +17,9 @@ type Connection struct {
 }
 
 func NewConnection(url string, driver databaseDrivers.Driver, options ...DatabaseOptions) (*Connection, error) {
+	if url == "" {
+		return nil, databaseErrors.EmptyConnectionString{}
+	}
 	db, err := sqlx.Open(string(driver.DriverName()), url)
 	if err != nil {
 		return nil, databaseErrors.CreateConnectionError{Err: err}

@@ -2,9 +2,9 @@ package serco
 
 import (
 	"encoding/json"
-	"os"
 	"path"
 
+	"github.com/aledenza/serco/env"
 	"github.com/creasty/defaults"
 	"github.com/gurkankaymak/hocon"
 )
@@ -13,8 +13,8 @@ const defaultEnv = "default"
 
 func NewConfig[T any](folder string, searchKey string) (configStruct T) {
 	configPath := path.Join(folder)
-	env, ok := os.LookupEnv("env")
-	if !ok {
+	env := env.ENV()
+	if env == "" {
 		env = defaultEnv
 	}
 	var config *hocon.Config

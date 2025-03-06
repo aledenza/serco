@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/aledenza/serco/systemHandlers"
@@ -16,6 +18,7 @@ import (
 type HandlerDescriprion struct {
 	Description string
 	Tags        []string
+	Deprecated  bool
 }
 
 type HumaHandler[I, O any] = func(ctx context.Context, input *I) (output *O, err error)
@@ -83,11 +86,11 @@ func NewServer(config ServerConfig) *Server {
 		huma.Register(api, huma.Operation{Method: "GET", Path: "/", Hidden: true}, systemHandlers.Hello)
 		huma.Register(api, huma.Operation{Method: "GET", Path: "/version", Hidden: true}, systemHandlers.Version)
 		huma.Register(api, huma.Operation{Method: "GET", Path: "/ping", Hidden: true}, systemHandlers.Ping)
-		huma.Register(api, huma.Operation{Method: "GET", Path: "/jwtping", Hidden: true}, systemHandlers.JWTPing)
 	}
 	for _, middleware := range config.Middlewares {
 		api.UseMiddleware(middleware)
 	}
+	huma.Register(api, huma.Operation{Method: "GET", Path: "/jwtping", Hidden: true}, systemHandlers.JWTPing)
 	cli := humacli.New(func(hooks humacli.Hooks, _ *struct{}) {
 		server := http.Server{
 			Addr:    fmt.Sprintf(":%d", config.Port),
@@ -98,12 +101,20 @@ func NewServer(config ServerConfig) *Server {
 			startup(context.Background(), config.OnStart)
 			server.ListenAndServe()
 		})
-
-		hooks.OnStop(func() {
+		stopServer := func() {
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
 			shutdown(config.OnStop)
 			server.Shutdown(ctx)
+		}
+		ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
+		go func() {
+			<-ctx.Done()
+			defer cancel()
+			stopServer()
+		}()
+		hooks.OnStop(func() {
+			stopServer()
 		})
 	})
 	return &Server{Port: config.Port, app: cli, Api: api, router: config.Router}

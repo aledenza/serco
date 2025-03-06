@@ -25,6 +25,8 @@ func register[I, O any](
 			OperationID: name,
 			Description: desc.Description,
 			Tags:        desc.Tags,
+			Deprecated:  desc.Deprecated,
+			Security:    []map[string][]string{{"Bearer": {}}},
 		},
 		handler,
 	)
